@@ -1,6 +1,8 @@
 var express = require('express');
 var router = express.Router();
 const userSchema = require('../models/newuser');
+const session = require('express-session');
+const parseurl = require('parseurl');
 
 const bcrypt = require('bcrypt');
 const {body, validationResult} = require('express-validator');
@@ -78,5 +80,40 @@ router.get('/login', (req,res)=>{
 
 
 //쿠키와 세션
+router.get('/cookie', (req,res)=>{
+  //express-generator 사용하지 않았다면 app.js에 cookieparser 설치되지 않았을것이므로 따로 설치해야한다
+  res.cookie('drink','water'); //key -value 순이다
+  res.send('set cookies');
+});
+
+//세션사용
+//user.js라는 라우터 구간에서만 사용가능하게끔 만든 예시
+//프로젝트 전역에서 사용하려면 어떻게 해야할지?
+router.use(
+  session({
+    secret: "12345",
+    resave: false,
+    saveUninitialized: true
+  })
+);
+
+
+router.use(function (req, res, next) {
+  if (!req.session.views) {
+    req.session.views = {}
+  }
+
+  // get the url pathname
+  var pathname = parseurl(req).pathname
+
+  // count the views
+  req.session.views[pathname] = (req.session.views[pathname] || 0) + 1
+
+  next()
+})
+
+router.get('/foo', function (req, res, next) {
+  res.send('you viewed this page ' + req.session.views['/foo'] + ' times')
+})
 
 module.exports = router;
